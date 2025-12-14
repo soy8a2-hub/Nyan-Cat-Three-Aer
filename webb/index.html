@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Nyan Cat Reciclaje</title>
+
+<!-- CSS externo -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>Nyan Cat ♻️</h2>
+
+<canvas id="game" width="360" height="640"></canvas>
+
+<script>
+/* CANVAS */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* SONIDO SIMPLE */
+function beep(){
+    const audio = new Audio();
+    audio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+    audio.play();
+}
+
+/* RÉCORD */
+let record = localStorage.getItem("record") || 0;
+
+/* NYAN CAT */
+let nyan = {
+    x: 60,
+    y: 300,
+    w: 70,
+    h: 45,
+    v: 0
+};
+
+/* VARIABLES */
+let gravedad = 0.4;
+let salto = -7;
+let puntos = 0;
+let perder = false;
+
+/* IMÁGENES */
+let imgNyan = new Image();
+imgNyan.src = "nyan.png";
+
+let imgBote = new Image();
+imgBote.src = "bote.png";
+
+/* BOTES */
+let botes = [];
+let espacio = 160;
+
+/* CREAR BOTES */
+setInterval(() => {
+    if (!perder) {
+        let alto = Math.random() * 200 + 80;
+        botes.push({
+            x: 360,
+            t: alto,
+            b: alto + espacio,
+            p: false
+        });
+    }
+}, 1800);
+
+/* CONTROLES */
+document.onclick = () => {
+    if (!perder) {
+        nyan.v = salto;
+        beep();
+    }
+};
+
+document.onkeydown = e => {
+    if (e.code === "Space") document.onclick();
+};
+
+/* COLISIÓN */
+function choque(o) {
+    return (
+        nyan.x < o.x + 60 &&
+        nyan.x + nyan.w > o.x &&
+        (nyan.y < o.t || nyan.y + nyan.h > o.b)
+    );
+}
+
+/* JUEGO */
+function loop() {
+    ctx.clearRect(0, 0, 360, 640);
+
+    /* Nyan */
+    nyan.v += gravedad;
+    nyan.y += nyan.v;
+    ctx.drawImage(imgNyan, nyan.x, nyan.y, nyan.w, nyan.h);
+
+    /* Botes */
+    botes.forEach(o => {
+        o.x -= 2;
+
+        ctx.drawImage(imgBote, o.x, 0, 60, o.t);
+        ctx.drawImage(imgBote, o.x, o.b, 60, 640 - o.b);
+
+        if (choque(o)) perder = true;
+
+        if (!o.p && o.x + 60 < nyan.x) {
+            puntos++;
+            o.p = true;
+            beep();
+        }
+    });
+
+    /* Límites */
+    if (nyan.y < 0 || nyan.y + nyan.h > 640) perder = true;
+
+    /* Guardar récord */
+    if (perder && puntos > record) {
+        record = puntos;
+        localStorage.setItem("record", record);
+    }
+
+    /* Texto */
+    ctx.fillStyle = "#000";
+    ctx.font = "18px Arial";
+    ctx.fillText("Puntos: " + puntos, 10, 25);
+    ctx.fillText("Récord: " + record, 10, 45);
+
+    if (perder) {
+        ctx.fillStyle = "red";
+        ctx.font = "28px Arial";
+        ctx.fillText("Perdiste", 120, 320);
+        ctx.font = "14px Arial";
+        ctx.fillText("Recarga para jugar", 110, 350);
+    }
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
